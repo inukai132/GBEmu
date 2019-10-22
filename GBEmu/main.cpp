@@ -1,84 +1,50 @@
-#include <Windows.h>
-#include <tchar.h>
+﻿#include <stdio.h>
+#include <stdlib.h>
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 int GB_WIDTH = 160;
 int GB_HEIGHT = 144;
+int gb_mult = 5;
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-void redraw(HDC hdc);
-
-int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmd, int nCmdShow)
+int main()
 {
-	int gb_mult = 5;
-	static TCHAR CLASS_NAME[] = _T("GBEmu");
-	WNDCLASS wc = {};
-
-	wc.lpfnWndProc = WndProc;
-	wc.hInstance = hInst;
-	wc.lpszClassName = CLASS_NAME;
-
-	if (!RegisterClass(&wc))
+	if (!glfwInit())
 	{
-		MessageBox(NULL,
-			_T("Call to RegisterClass Failed!"),
-			_T("Error Box"),
-			NULL);
-
-		return 1;
+		fprintf(stderr, "Error: Failed to initialize GLFW\n");
+		return -1;
 	}
 
-	HWND hWnd = CreateWindowEx(0, CLASS_NAME, _T("GameBoy Emulator"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, gb_mult * GB_WIDTH, gb_mult * GB_HEIGHT, NULL, NULL, hInst, NULL);
-	if (!hWnd)
-	{
-		DWORD er = GetLastError();
-		MessageBox(NULL,
-			_T("Call to CreateWindow Failed!"),
-			_T("Error Box"),
-			NULL);
+	glfwWindowHint(GLFW_SAMPLES, 4);									//AA x4
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);						//OpenGL ver 3.3
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);		//Current OpenGL
 
-		return 1;
+	GLFWwindow* window;
+	window = glfwCreateWindow(gb_mult * GB_WIDTH, gb_mult * GB_HEIGHT, "GB Emu", NULL, NULL);
+	if (window == NULL)
+	{
+		fprintf(stderr, "Error: Failed to create window.\n");
+		return -1;
+		glfwTerminate();
 	}
 
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
-
-	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0))
+	glfwMakeContextCurrent(window);  //Init GLEW
+	if (glewInit() != GLEW_OK)
 	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		fprintf(stderr, "Error: Failed to initialize GLEW.\n");
+		return -1;
 	}
-	return (int)msg.wParam;
-}
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	PAINTSTRUCT ps;
-	HDC hdc;
-	switch (message)
+
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+
+	do 
 	{
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		redraw(hdc);
-		EndPaint(hWnd, &ps);
-	case WM_CREATE:
-		return 0;
-	case WM_SIZE:
-		return 0;
-	case WM_CLOSE:
-		DestroyWindow(hWnd);
-		return 0;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
-	return 0;
-}
+		glClear(GL_COLOR_BUFFER_BIT);
 
-void redraw(HDC hdc)
-{
-	TextOut(hdc, 10, 10, _T("Hello Wurld"), 12);
-
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	} while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
 }
